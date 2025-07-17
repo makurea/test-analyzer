@@ -56,11 +56,22 @@ public class YourTestClass {
 ---
 
 ###  Как собрать и подключить библиотеку локально?
-   Клонируйте репозиторий:
 
-```bash
-git clone https://github.com/makurea/test-analyzer.git
-cd test-analyzer
+#### Шаг 1. Добавьте JitPack репозиторий в settings.gradle
+```groovy
+dependencyResolutionManagement {
+repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+repositories {
+mavenCentral()
+maven { url 'https://jitpack.io' }
+}
+}
+```
+#### Шаг 2. Добавьте зависимость в build.gradle
+```groovy
+dependencies {
+    implementation 'com.github.makurea:test-analyzer:main-SNAPSHOT'
+}
 ```
 
 ### Соберите библиотеку:
