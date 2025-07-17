@@ -68,7 +68,18 @@ public class ReportGenerator {
             "        body.dark-mode .duration-medium { background-color: #5a5a2a; }\n" +
             "        .duration-long { background-color: #ffe6e6; }\n" +
             "        body.dark-mode .duration-long { background-color: #6a2a2a; }\n" +
-            "        canvas { max-width: 900px; margin: 40px auto; display: block; border: 1px solid #eee; border-radius: 8px; background: #fff; }\n" +
+            "        /* Изменения для размера графика */\n" +
+            "        canvas {\n" +
+            "            max-width: 600px; /* Уменьшаем максимальную ширину */\n" +
+            "            max-height: 400px; /* Добавляем максимальную высоту */\n" +
+            "            width: 100%; /* Сохраняем адаптивность */\n" +
+            "            height: auto; /* Сохраняем пропорции */\n" +
+            "            margin: 40px auto; \n" +
+            "            display: block; \n" +
+            "            border: 1px solid #eee; \n" +
+            "            border-radius: 8px; \n" +
+            "            background: #fff; \n" +
+            "        }\n" +
             "        body.dark-mode canvas { background: #3c3c3c; border-color: #555; }\n" +
             "        #themeToggle { position: absolute; top: 20px; right: 20px; padding: 8px 12px; font-size: 1em; }\n" +
             "        .json-download { text-align: center; margin-top: 30px; }\n" +
@@ -254,7 +265,7 @@ public class ReportGenerator {
             "                },\n" +
             "                options: {\n" +
             "                    responsive: true,\n" +
-            "                    maintainAspectRatio: false,\n" +
+            "                    maintainAspectRatio: false, // Отключаем поддержание аспектного соотношения по умолчанию\n" +
             "                    scales: {\n" +
             "                        y: {\n" +
             "                            beginAtZero: true,\n" +
@@ -338,8 +349,6 @@ public class ReportGenerator {
             "            } else if (criteria === 'name') {\n" +
             "                sortedData.sort((a, b) => a.testName.localeCompare(b.testName));\n" +
             "            }\n" +
-            "            // Status sorting is not directly applicable with current data structure for each row\n" +
-            "            // If status per test case were available, it could be implemented.\n" +
             "            renderTable(sortedData);\n" +
             "            renderChart(sortedData);\n" +
             "        }\n" +
