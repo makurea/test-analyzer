@@ -40,8 +40,20 @@ public class YourTestClass {
 
 ### 3. Запустите тесты и смотрите вывод в консоли
 ```scss
-   [TestTimer] exampleTest() executed in 200 ms
+   [TestTimer] exampleTest() BeforeEach executed in 10 ms
+   [TestTimer] exampleTest() Test method executed in 200 ms
+   [TestTimer] Отчёт создан: build/test-analyzer-reports/test-timer-report.html
 ```
+
+### 4. Откройте HTML-отчёт
+
+После запуска тестов в папке build/test-analyzer-reports появятся файлы:
+ - `test-timer-results.json` — данные по замерам в формате JSON
+ - `test-timer-report.html` — красивый интерактивный отчёт с графиками
+
+Откройте `test-timer-report.html` в браузере для анализа.
+
+---
 
 ###  Как собрать и подключить библиотеку локально?
    Клонируйте репозиторий:
