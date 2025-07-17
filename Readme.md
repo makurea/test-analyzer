@@ -14,14 +14,30 @@ Java библиотека для измерения и логирования в
 
 ### 1. Подключите зависимость к своему проекту
 
-(Пока библиотека не опубликована в Maven Central, подключайте локально или через JitPack)
+(Пока библиотека не опубликована в Maven Central, подключайте через JitPack)
 
+#### Шаг 1. Добавьте JitPack репозиторий в settings.gradle
 ```groovy
-// build.gradle
-dependencies {
-    implementation 'dev.makurea:test-analyzer:0.1.0'
+dependencyResolutionManagement {
+repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+repositories {
+mavenCentral()
+maven { url 'https://jitpack.io' }
+}
 }
 ```
+
+#### Шаг 2. Добавьте зависимость в build.gradle
+```groovy
+dependencies {
+    implementation 'com.github.makurea:test-analyzer:main-SNAPSHOT'
+}
+```
+#### Шаг 3. Соберите библиотеку:
+```bash
+./gradlew build
+```
+
 ### 2. Добавьте расширение к вашим тестам
 ```java
    import dev.makurea.testanalyzer.TestTimerExtension;
@@ -55,39 +71,11 @@ public class YourTestClass {
 
 ---
 
-###  Как собрать и подключить библиотеку локально?
-
-#### Шаг 1. Добавьте JitPack репозиторий в settings.gradle
-```groovy
-dependencyResolutionManagement {
-repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-repositories {
-mavenCentral()
-maven { url 'https://jitpack.io' }
-}
-}
-```
-#### Шаг 2. Добавьте зависимость в build.gradle
-```groovy
-dependencies {
-    implementation 'com.github.makurea:test-analyzer:main-SNAPSHOT'
-}
-```
-
-### Соберите библиотеку:
-```bash
-./gradlew build
-```
-Подключите локальную библиотеку в другом проекте, указав путь к .jar из build/libs
-
-### Планы на будущее
+### Планы на будущее😉
 
  - Сохранение логов в JSON-файл
-
  - Генерация HTML-отчётов
-
  - Интеграция с CI-системами
-
  - Анализ flaky-тестов
 
 ### Лицензия
