@@ -2,69 +2,280 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Test Analyzer Report</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-    body.dark-mode { background-color: #2c2c2c; color: #f0f0f0; }
-    h1 { text-align: center; color: #0056b3; margin-bottom: 30px; }
-    body.dark-mode h1 { color: #87cefa; }
-    .container { max-width: 1000px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
-    body.dark-mode .container { background: #3c3c3c; box-shadow: 0 0 15px rgba(0,0,0,0.3); }
-    .summary { text-align: center; margin-bottom: 20px; font-size: 1.1em; font-weight: bold; }
-    .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .controls button, .controls input { padding: 10px 15px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; background-color: #f0f0f0; }
-    body.dark-mode .controls button, body.dark-mode .controls input { background-color: #555; color: #f0f0f0; border-color: #777; }
-    .controls button:hover { background-color: #e0e0e0; }
-    body.dark-mode .controls button:hover { background-color: #666; }
-    #searchInput { width: 300px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
-    th { background-color: #f2f2f2; font-weight: bold; }
-    body.dark-mode th { background-color: #4a4a4a; }
-    .duration-short { background-color: #e6ffe6; }
-    body.dark-mode .duration-short { background-color: #284a28; }
-    .duration-medium { background-color: #fffacd; }
-    body.dark-mode .duration-medium { background-color: #5a5a2a; }
-    .duration-long { background-color: #ffe6e6; }
-    body.dark-mode .duration-long { background-color: #6a2a2a; }
-    /* Изменения для размера графика */
-    canvas {
-      max-width: 600px; /* Уменьшаем максимальную ширину */
-      max-height: 400px; /* Добавляем максимальную высоту */
-      width: 100%; /* Сохраняем адаптивность */
-      height: auto; /* Сохраняем пропорции */
-      margin: 40px auto;
-      display: block;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      background: #fff;
+    /* CSS Variables for easy theme switching */
+    :root {
+      --bg-color: #f8f9fa;
+      --text-color: #343a40;
+      --container-bg: #ffffff;
+      --container-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --header-color: #007bff;
+      --button-bg: #e9ecef;
+      --button-hover-bg: #dee2e6;
+      --border-color: #e9ecef;
+      --table-header-bg: #f2f2f2;
+      --passed-color: #28a745; /* Green */
+      --failed-color: #dc3545; /* Red */
+      --short-duration-bg: #d4edda; /* Light green */
+      --medium-duration-bg: #ffc10740; /* Light yellow with transparency */
+      --long-duration-bg: #f8d7da; /* Light red */
     }
-    body.dark-mode canvas { background: #3c3c3c; border-color: #555; }
-    #themeToggle { position: absolute; top: 20px; right: 20px; padding: 8px 12px; font-size: 1em; }
-    .json-download { text-align: center; margin-top: 30px; }
-    .json-download button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
-    .json-download button:hover { background-color: #45a049; }
+
+    body.dark-mode {
+      --bg-color: #212529;
+      --text-color: #e9ecef;
+      --container-bg: #343a40;
+      --container-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      --header-color: #66b2ff;
+      --button-bg: #495057;
+      --button-hover-bg: #6c757d;
+      --border-color: #495057;
+      --table-header-bg: #495057;
+      --passed-color: #2ecc71;
+      --failed-color: #e74c3c;
+      --short-duration-bg: #1a4f2c;
+      --medium-duration-bg: #6a5a2a;
+      --long-duration-bg: #6a2a2a;
+    }
+
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--bg-color);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    /* Header */
+    h1 {
+      text-align: center;
+      color: var(--header-color);
+      margin-bottom: 30px;
+      font-weight: 700;
+      font-size: 2.5em;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 30px;
+      background: var(--container-bg);
+      border-radius: 12px;
+      box-shadow: var(--container-shadow);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Summary Section */
+    .summary {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: var(--header-color);
+    }
+
+    /* Controls (Buttons and Search) */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .controls button, .controls input[type="text"] {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      background-color: var(--button-bg);
+      color: var(--text-color);
+      font-size: 1em;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .controls button:hover {
+      background-color: var(--button-hover-bg);
+    }
+
+    #searchInput {
+      width: 300px;
+      flex-grow: 1;
+      max-width: 400px;
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: separate; /* Use separate to allow border-radius on cells */
+      border-spacing: 0;
+      margin-top: 20px;
+      border-radius: 8px;
+      overflow: hidden; /* Ensures rounded corners apply */
+    }
+
+    th, td {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--table-header-bg);
+      font-weight: bold;
+      color: var(--text-color);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+    body.dark-mode tbody tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Row highlighting based on duration */
+    .duration-short { background-color: var(--short-duration-bg); }
+    .duration-medium { background-color: var(--medium-duration-bg); }
+    .duration-long { background-color: var(--long-duration-bg); }
+
+    /* Status specific styling */
+    .status-PASSED { color: var(--passed-color); font-weight: bold; }
+    .status-FAILED { color: var(--failed-color); font-weight: bold; }
+
+    /* Chart Styles */
+    .chart-container {
+      margin: 40px auto;
+      max-width: 900px; /* Increased max-width for better chart visibility */
+      height: 500px; /* Fixed height for better chart rendering */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: var(--container-bg);
+      box-shadow: var(--container-shadow);
+      padding: 20px;
+    }
+    canvas {
+      width: 100% !important; /* Override Chart.js inline styles */
+      height: 100% !important; /* Override Chart.js inline styles */
+    }
+
+    /* Theme Toggle Button */
+    #themeToggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      font-size: 1.2em;
+      border-radius: 50%; /* Make it round */
+      width: 50px; /* Fixed width */
+      height: 50px; /* Fixed height */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--button-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      font-size: 1.5em; /* Larger icon */
+    }
+    #themeToggle:hover {
+      background-color: var(--button-hover-bg);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    /* JSON Download Button */
+    .json-download {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .json-download button {
+      background-color: #007bff;
+      color: white;
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1em;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+      transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    .json-download button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 10px;
+      }
+      .container {
+        padding: 20px;
+      }
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #searchInput {
+        width: 100%;
+        max-width: none;
+      }
+      table, th, td {
+        font-size: 0.9em;
+      }
+      th, td {
+        padding: 10px 12px;
+      }
+      #themeToggle {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+      }
+    }
   </style>
 </head>
 <body>
-<button id="themeToggle">Переключить тему</button>
+<button id="themeToggle" aria-label="Toggle dark/light theme">💡</button>
 <div class="container">
-  <h1>Отчёт по времени тестов</h1>
+  <h1>Отчёт по результатам тестов</h1>
   <p class="summary" id="totalTime"></p>
 
   <div class="controls">
     <input type="text" id="searchInput" placeholder="Поиск по имени теста..." />
-    <button onclick="sortTests('duration')">Сортировать по времени</button>
-    <button onclick="sortTests('name')">Сортировать по имени</button>
+    <button onclick="sortTests('duration')">Сортировать по длительности ⏱️</button>
+    <button onclick="sortTests('name')">Сортировать по имени теста 🔠</button>
   </div>
 
   <table>
     <thead>
     <tr>
       <th>Имя теста</th>
-      <th>Фаза</th>
-      <th>Длительность (мс)</th>
+      <th>Общая длительность (мс)</th>
       <th>Статус</th>
       <th>Повторы</th>
       <th>Теги</th>
@@ -78,66 +289,98 @@
   </table>
 
   <h2>График длительности тестов</h2>
-  <canvas id="chart"></canvas>
+  <div class="chart-container">
+    <canvas id="chart"></canvas>
+  </div>
+
 
   <div class="json-download">
-    <button onclick="downloadJson()">Скачать JSON отчёт</button>
+    <button onclick="downloadJson()">⬇️ Скачать JSON отчёт</button>
   </div>
 </div>
 
 <script>
-  let allTestData = [];
+  let allTestData = []; // Stores the original fetched data
+  let currentSortedData = []; // Stores the currently sorted/filtered data for table and chart rendering
 
+  // --- Theme Toggling Logic ---
   const themeToggle = document.getElementById('themeToggle');
-  const currentTheme = localStorage.getItem('theme');
-  if (currentTheme === 'dark') {
+  const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+  // Set initial theme based on localStorage or system preference
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
     document.body.classList.add('dark-mode');
-  } else if (currentTheme === 'light') {
+    themeToggle.textContent = '☀️'; // Sun icon for dark mode
+  } else if (savedTheme === 'light') {
     document.body.classList.remove('dark-mode');
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    themeToggle.textContent = '💡'; // Lightbulb/moon for light mode
+  } else if (prefersDarkScheme.matches) {
     document.body.classList.add('dark-mode');
+    themeToggle.textContent = '☀️';
+  } else {
+    themeToggle.textContent = '💡';
   }
 
+  // Listen for theme toggle click
   themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     if (document.body.classList.contains('dark-mode')) {
       localStorage.setItem('theme', 'dark');
+      themeToggle.textContent = '☀️';
     } else {
       localStorage.setItem('theme', 'light');
+      themeToggle.textContent = '💡';
     }
-    updateChartColors();
+    updateChartColors(); // Update chart colors on theme change
   });
 
+  // Listen for system theme changes
+  prefersDarkScheme.addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) { // Only react if no explicit theme is set
+      if (e.matches) {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️';
+      } else {
+        document.body.classList.remove('dark-mode');
+        themeToggle.textContent = '💡';
+      }
+      updateChartColors();
+    }
+  });
+
+  // --- Utility Functions ---
   function getDurationColorClass(duration) {
-    if (duration < 500) {
+    if (duration < 500) { // Fast tests
       return 'duration-short';
-    } else if (duration >= 500 && duration <= 1000) {
+    } else if (duration >= 500 && duration <= 2000) { // Medium tests
       return 'duration-medium';
-    } else {
+    } else { // Slow tests
       return 'duration-long';
     }
   }
 
-  function renderTable(dataToRender) {
-    const tableBody = document.getElementById('testResultsTableBody');
-    tableBody.innerHTML = '';
-    let totalDuration = 0;
-
+  // --- Data Processing for Table and Chart ---
+  function groupAndCombineTestData(data) {
     const grouped = {};
-    dataToRender.forEach(item => {
+    data.forEach(item => {
+      // Initialize or get the group for this test name
       if (!grouped[item.testName]) {
         grouped[item.testName] = {
           testName: item.testName,
           beforeEachDuration: 0,
           testMethodDuration: 0,
-          status: 'UNKNOWN',
+          status: 'UNKNOWN', // Default status
           retryCount: 0,
           tags: new Set(),
           memoryBefore: 0,
           memoryAfter: 0,
-          phaseDetails: []
+          // We can store original items if needed for deeper drill-down later
+          // originalPhases: []
         };
       }
+
+      // Aggregate durations and capture latest status/memory from TestMethod phase
       if (item.phase === 'BeforeEach') {
         grouped[item.testName].beforeEachDuration += item.durationMs;
       } else if (item.phase === 'TestMethod') {
@@ -146,16 +389,17 @@
         grouped[item.testName].retryCount = item.retryCount;
         grouped[item.testName].memoryBefore = item.memoryBefore;
         grouped[item.testName].memoryAfter = item.memoryAfter;
+        // Add tags to a Set to ensure uniqueness
         if (item.tags) item.tags.forEach(tag => grouped[item.testName].tags.add(tag));
       }
-      grouped[item.testName].phaseDetails.push(item);
+      // grouped[item.testName].originalPhases.push(item);
     });
 
+    // Convert grouped object back to an array for rendering
     const combinedTests = [];
     for (const testName in grouped) {
       const testData = grouped[testName];
       const totalTestDuration = testData.beforeEachDuration + testData.testMethodDuration;
-      totalDuration += totalTestDuration;
 
       combinedTests.push({
         testName: testData.testName,
@@ -169,119 +413,154 @@
         memoryAfter: testData.memoryAfter
       });
     }
+    return combinedTests;
+  }
 
-    combinedTests.sort((a, b) => b.totalTestDuration - a.totalTestDuration);
+  // --- Table Rendering ---
+  function renderTable(dataToRender) {
+    const tableBody = document.getElementById('testResultsTableBody');
+    tableBody.innerHTML = ''; // Clear existing rows
+    let totalOverallDuration = 0;
 
-    combinedTests.forEach(item => {
+    // Ensure data is sorted for table display (longest duration first)
+    dataToRender.sort((a, b) => b.totalTestDuration - a.totalTestDuration);
+    currentSortedData = dataToRender; // Update current sorted data
+
+    dataToRender.forEach(item => {
+      totalOverallDuration += item.totalTestDuration;
+
       const row = tableBody.insertRow();
+      // Apply color class based on combined test method duration
       const colorClass = getDurationColorClass(item.testMethodDuration);
       row.classList.add(colorClass);
 
+      // Add status class for visual highlighting
+      if (item.status) {
+        row.classList.add(`status-${item.status}`);
+      }
+
       row.insertCell().textContent = item.testName;
-      row.insertCell().textContent = `BeforeEach: ${item.beforeEachDuration}ms, TestMethod: ${item.testMethodDuration}ms`; // Combined phase duration
-      row.insertCell().textContent = item.totalTestDuration;
-      row.insertCell().textContent = item.status;
+      row.insertCell().textContent = `${item.totalTestDuration} мс (BeforeEach: ${item.beforeEachDuration} мс, TestMethod: ${item.testMethodDuration} мс)`;
+      row.insertCell().innerHTML = `${item.status === 'PASSED' ? '✅' : '❌'} ${item.status}`;
       row.insertCell().textContent = item.retryCount;
-      row.insertCell().textContent = item.tags.join(', ');
+      row.insertCell().textContent = item.tags.length > 0 ? item.tags.join(', ') : 'N/A';
       row.insertCell().textContent = item.memoryBefore;
       row.insertCell().textContent = item.memoryAfter;
-      row.insertCell().textContent = item.memoryAfter - item.memoryBefore;
+      row.insertCell().textContent = (item.memoryAfter - item.memoryBefore).toFixed(2); // Display memory change with 2 decimal places
     });
 
-    document.getElementById('totalTime').textContent = `Всего времени на выполнение тестов: ${totalDuration} мс`;
+    document.getElementById('totalTime').textContent = `Общее время выполнения всех тестов: ${totalOverallDuration.toFixed(2)} мс`;
   }
 
-
-  let myChart;
+  // --- Chart Rendering ---
+  let myChart; // Chart.js instance
 
   function renderChart(data) {
     const labels = [];
     const beforeEachData = [];
     const testMethodData = [];
-    const totalDurations = {};
 
-    const grouped = {};
+    // Sort combined data by total duration for chart consistency
+    data.sort((a, b) => b.totalTestDuration - a.totalTestDuration);
+
     data.forEach(item => {
-      if (!grouped[item.testName]) {
-        grouped[item.testName] = { beforeEach: 0, testMethod: 0 };
-      }
-      if (item.phase === 'BeforeEach') {
-        grouped[item.testName].beforeEach += item.durationMs;
-      } else if (item.phase === 'TestMethod') {
-        grouped[item.testName].testMethod += item.durationMs;
-      }
-    });
-
-    for (const testName in grouped) {
-      totalDurations[testName] = grouped[testName].beforeEach + grouped[testName].testMethod;
-    }
-
-
-    const sortedTestNames = Object.keys(totalDurations).sort((a, b) => totalDurations[b] - totalDurations[a]);
-
-    sortedTestNames.forEach(testName => {
-      labels.push(testName);
-      beforeEachData.push(grouped[testName].beforeEach);
-      testMethodData.push(grouped[testName].testMethod);
+      labels.push(item.testName);
+      beforeEachData.push(item.beforeEachDuration);
+      testMethodData.push(item.testMethodDuration);
     });
 
     const ctx = document.getElementById('chart').getContext('2d');
     if (myChart) {
-      myChart.destroy();
+      myChart.destroy(); // Destroy previous chart instance
     }
+
     myChart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [
           {
-            label: 'BeforeEach, мс',
+            label: 'BeforeEach (мс)',
             data: beforeEachData,
-            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+            backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(102, 178, 255, 0.8)' : 'rgba(54, 162, 235, 0.8)', // Blue tones
+            borderColor: document.body.classList.contains('dark-mode') ? 'rgba(102, 178, 255, 1)' : 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
           },
           {
-            label: 'TestMethod, мс',
+            label: 'TestMethod (мс)',
             data: testMethodData,
-            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+            backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(255, 102, 102, 0.8)' : 'rgba(255, 99, 132, 0.8)', // Red tones
+            borderColor: document.body.classList.contains('dark-mode') ? 'rgba(255, 102, 102, 1)' : 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: document.body.classList.contains('dark-mode') ? 'var(--text-color)' : '#333',
+              font: {
+                size: 14
+              }
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                label += context.parsed.y + ' мс';
+                return label;
+              }
+            }
+          }
+        },
         scales: {
-          y: {
-            beginAtZero: true,
+          x: {
+            stacked: true, // Stack bars for combined duration
             title: {
               display: true,
-              text: 'Время (миллисекунды)',
-              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+              text: 'Название теста',
+              color: document.body.classList.contains('dark-mode') ? 'var(--text-color)' : '#333',
+              font: {
+                size: 16,
+                weight: 'bold'
+              }
             },
             ticks: {
-              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+              color: document.body.classList.contains('dark-mode') ? 'var(--text-color)' : '#333',
+              maxRotation: 45,
+              minRotation: 45
             },
             grid: {
               color: document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
             }
           },
-          x: {
+          y: {
+            stacked: true,
+            beginAtZero: true,
             title: {
               display: true,
-              text: 'Название теста',
-              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+              text: 'Время (миллисекунды)',
+              color: document.body.classList.contains('dark-mode') ? 'var(--text-color)' : '#333',
+              font: {
+                size: 16,
+                weight: 'bold'
+              }
             },
             ticks: {
-              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+              color: document.body.classList.contains('dark-mode') ? 'var(--text-color)' : '#333'
             },
             grid: {
               color: document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            labels: {
-              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
             }
           }
         }
@@ -289,63 +568,75 @@
     });
   }
 
+  // Update chart colors dynamically after theme change
   function updateChartColors() {
     if (myChart) {
-      myChart.options.scales.y.title.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
-      myChart.options.scales.y.ticks.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
-      myChart.options.scales.y.grid.color = document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-      myChart.options.scales.x.title.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
-      myChart.options.scales.x.ticks.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
-      myChart.options.scales.x.grid.color = document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-      myChart.options.plugins.legend.labels.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
+      const isDarkMode = document.body.classList.contains('dark-mode');
+      myChart.options.scales.y.title.color = isDarkMode ? 'var(--text-color)' : '#333';
+      myChart.options.scales.y.ticks.color = isDarkMode ? 'var(--text-color)' : '#333';
+      myChart.options.scales.y.grid.color = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      myChart.options.scales.x.title.color = isDarkMode ? 'var(--text-color)' : '#333';
+      myChart.options.scales.x.ticks.color = isDarkMode ? 'var(--text-color)' : '#333';
+      myChart.options.scales.x.grid.color = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      myChart.options.plugins.legend.labels.color = isDarkMode ? 'var(--text-color)' : '#333';
+
+      // Update dataset colors based on theme
+      myChart.data.datasets[0].backgroundColor = isDarkMode ? 'rgba(102, 178, 255, 0.8)' : 'rgba(54, 162, 235, 0.8)';
+      myChart.data.datasets[0].borderColor = isDarkMode ? 'rgba(102, 178, 255, 1)' : 'rgba(54, 162, 235, 1)';
+      myChart.data.datasets[1].backgroundColor = isDarkMode ? 'rgba(255, 102, 102, 0.8)' : 'rgba(255, 99, 132, 0.8)';
+      myChart.data.datasets[1].borderColor = isDarkMode ? 'rgba(255, 102, 102, 1)' : 'rgba(255, 99, 132, 1)';
+
       myChart.update();
     }
   }
 
-  fetch("{{JSON_FILENAME}}")
-  .then(response => response.json())
+  // --- Data Fetching ---
+  fetch("{{JSON_FILENAME}}") // Placeholder for actual JSON file name
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(data => {
     allTestData = data;
-    renderTable(allTestData);
-    renderChart(allTestData);
+    const combinedData = groupAndCombinedTestData(allTestData);
+    renderTable(combinedData);
+    renderChart(combinedData);
   })
   .catch(err => {
-    document.body.innerHTML = '<h2>Ошибка загрузки данных отчёта</h2><pre>' + err + '</pre>';
+    console.error('Error loading test data:', err);
+    document.body.innerHTML = '<div class="container" style="text-align: center; color: var(--failed-color);">' +
+        '<h1>⚠️ Ошибка загрузки данных отчёта</h1>' +
+        '<p>Произошла ошибка при загрузке файла с данными отчёта. Убедитесь, что файл ' +
+        '<code>{{JSON_FILENAME}}</code> существует и доступен.</p>' +
+        '<pre style="text-align: left; background: var(--button-bg); padding: 15px; border-radius: 8px; overflow-x: auto;">' + err + '</pre>' +
+        '</div>';
   });
 
+  // --- Sorting Functionality ---
   function sortTests(criteria) {
-    let sortedData = [...allTestData]; // Use a copy
+    let dataToSort = [...currentSortedData]; // Use current filtered/sorted data
     if (criteria === 'duration') {
-      const groupedDurations = {};
-      allTestData.forEach(item => {
-        if (!groupedDurations[item.testName]) {
-          groupedDurations[item.testName] = 0;
-        }
-        groupedDurations[item.testName] += item.durationMs;
-      });
-
-      sortedData.sort((a, b) => {
-        const durationA = groupedDurations[a.testName] || 0;
-        const durationB = groupedDurations[b.testName] || 0;
-        return durationB - durationA; // Descending
-      });
+      dataToSort.sort((a, b) => b.totalTestDuration - a.totalTestDuration); // Descending by total duration
     } else if (criteria === 'name') {
-      sortedData.sort((a, b) => a.testName.localeCompare(b.testName));
+      dataToSort.sort((a, b) => a.testName.localeCompare(b.testName)); // Alphabetical by name
     }
-    renderTable(sortedData);
-    renderChart(sortedData);
+    renderTable(dataToSort); // Re-render table with sorted data
+    renderChart(dataToSort); // Re-render chart with sorted data
   }
 
-
+  // --- Search Functionality ---
   document.getElementById('searchInput').addEventListener('keyup', function() {
     const searchTerm = this.value.toLowerCase();
-    const filteredData = allTestData.filter(item =>
+    const filteredData = groupAndCombineTestData(allTestData).filter(item =>
         item.testName.toLowerCase().includes(searchTerm)
     );
     renderTable(filteredData);
     renderChart(filteredData);
   });
 
+  // --- JSON Download Functionality ---
   function downloadJson() {
     fetch("{{JSON_FILENAME}}")
     .then(response => response.json())
@@ -363,6 +654,7 @@
     })
     .catch(err => {
       alert('Ошибка при скачивании JSON: ' + err);
+      console.error('Error downloading JSON:', err);
     });
   }
 </script>
