@@ -2,11 +2,14 @@ package dev.makurea.testanalyzer.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.makurea.testanalyzer.core.TestResult;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Scanner;
 
@@ -31,8 +34,8 @@ public class ReportGenerator {
       File htmlFile = new File(dir, HTML_FILENAME);
       String htmlContent = loadHtmlTemplate(JSON_FILENAME);
 
-      try (FileWriter writer = new FileWriter(htmlFile, StandardCharsets.UTF_8)) {
-        writer.write(htmlContent);
+      try (BufferedWriter writer = Files.newBufferedWriter(htmlFile.toPath(), StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       }
 
       System.out.println("[TestAnalyzer] Отчёт создан: " + htmlFile.getAbsolutePath());

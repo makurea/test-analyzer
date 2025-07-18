@@ -2,6 +2,7 @@ package dev.makurea.testanalyzer.core;
 
 import dev.makurea.testanalyzer.metrics.*;
 import dev.makurea.testanalyzer.report.ReportGenerator;
+import java.util.Arrays;
 import org.junit.jupiter.api.extension.*;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public class TestTimerExtension implements BeforeTestExecutionCallback, AfterTes
   private final TestRunAggregator aggregator = new TestRunAggregator();
   private final ReportGenerator reportGenerator = new ReportGenerator();
 
-  private final List<MetricCollector> collectors = List.of(
+  List<MetricCollector> collectors = Arrays.asList(
       new StatusCollector(),
       new RetryCollector(),
       new TagsCollector()

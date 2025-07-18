@@ -1,6 +1,7 @@
 package dev.makurea.testanalyzer.metrics;
 
 import dev.makurea.testanalyzer.core.TestResult;
+import java.util.Collections;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -16,7 +17,7 @@ public class TagsCollector implements MetricCollector {
         .map(el -> Arrays.stream(el.getAnnotationsByType(Tag.class))
             .map(Tag::value)
             .collect(Collectors.toList()))
-        .orElse(List.of());
+        .orElse(Collections.emptyList());
 
     builder.tags(tags);
   }
