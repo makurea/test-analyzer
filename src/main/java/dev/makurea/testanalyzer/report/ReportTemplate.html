@@ -302,7 +302,7 @@
     }
   }
 
-  fetch("")
+  fetch("{{JSON_FILENAME}}")
   .then(response => response.json())
   .then(data => {
     allTestData = data;
@@ -347,7 +347,7 @@
   });
 
   function downloadJson() {
-    fetch("")
+    fetch("{{JSON_FILENAME}}")
     .then(response => response.json())
     .then(data => {
       const jsonString = JSON.stringify(data, null, 2);
