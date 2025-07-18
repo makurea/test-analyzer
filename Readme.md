@@ -40,7 +40,7 @@ dependencies {
 
 ### 2. Добавьте расширение к вашим тестам
 ```java
-   import dev.makurea.testanalyzer.TestTimerExtension;
+   import dev.makurea.testanalyzer.core.TestTimerExtension;
    import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(TestTimerExtension.class)

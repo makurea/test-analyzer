@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Analyzer Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
+    body.dark-mode { background-color: #2c2c2c; color: #f0f0f0; }
+    h1 { text-align: center; color: #0056b3; margin-bottom: 30px; }
+    body.dark-mode h1 { color: #87cefa; }
+    .container { max-width: 1000px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+    body.dark-mode .container { background: #3c3c3c; box-shadow: 0 0 15px rgba(0,0,0,0.3); }
+    .summary { text-align: center; margin-bottom: 20px; font-size: 1.1em; font-weight: bold; }
+    .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .controls button, .controls input { padding: 10px 15px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; background-color: #f0f0f0; }
+    body.dark-mode .controls button, body.dark-mode .controls input { background-color: #555; color: #f0f0f0; border-color: #777; }
+    .controls button:hover { background-color: #e0e0e0; }
+    body.dark-mode .controls button:hover { background-color: #666; }
+    #searchInput { width: 300px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #f2f2f2; font-weight: bold; }
+    body.dark-mode th { background-color: #4a4a4a; }
+    .duration-short { background-color: #e6ffe6; }
+    body.dark-mode .duration-short { background-color: #284a28; }
+    .duration-medium { background-color: #fffacd; }
+    body.dark-mode .duration-medium { background-color: #5a5a2a; }
+    .duration-long { background-color: #ffe6e6; }
+    body.dark-mode .duration-long { background-color: #6a2a2a; }
+    /* Изменения для размера графика */
+    canvas {
+      max-width: 600px; /* Уменьшаем максимальную ширину */
+      max-height: 400px; /* Добавляем максимальную высоту */
+      width: 100%; /* Сохраняем адаптивность */
+      height: auto; /* Сохраняем пропорции */
+      margin: 40px auto;
+      display: block;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      background: #fff;
+    }
+    body.dark-mode canvas { background: #3c3c3c; border-color: #555; }
+    #themeToggle { position: absolute; top: 20px; right: 20px; padding: 8px 12px; font-size: 1em; }
+    .json-download { text-align: center; margin-top: 30px; }
+    .json-download button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+    .json-download button:hover { background-color: #45a049; }
+  </style>
+</head>
+<body>
+<button id="themeToggle">Переключить тему</button>
+<div class="container">
+  <h1>Отчёт по времени тестов</h1>
+  <p class="summary" id="totalTime"></p>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Поиск по имени теста..." />
+    <button onclick="sortTests('duration')">Сортировать по времени</button>
+    <button onclick="sortTests('name')">Сортировать по имени</button>
+  </div>
+
+  <table>
+    <thead>
+    <tr>
+      <th>Имя теста</th>
+      <th>Фаза</th>
+      <th>Длительность (мс)</th>
+      <th>Статус</th>
+      <th>Повторы</th>
+      <th>Теги</th>
+      <th>Память До (байт)</th>
+      <th>Память После (байт)</th>
+      <th>Изменение памяти (байт)</th>
+    </tr>
+    </thead>
+    <tbody id="testResultsTableBody">
+    </tbody>
+  </table>
+
+  <h2>График длительности тестов</h2>
+  <canvas id="chart"></canvas>
+
+  <div class="json-download">
+    <button onclick="downloadJson()">Скачать JSON отчёт</button>
+  </div>
+</div>
+
+<script>
+  let allTestData = [];
+
+  const themeToggle = document.getElementById('themeToggle');
+  const currentTheme = localStorage.getItem('theme');
+  if (currentTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+  } else if (currentTheme === 'light') {
+    document.body.classList.remove('dark-mode');
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.body.classList.add('dark-mode');
+  }
+
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    if (document.body.classList.contains('dark-mode')) {
+      localStorage.setItem('theme', 'dark');
+    } else {
+      localStorage.setItem('theme', 'light');
+    }
+    updateChartColors();
+  });
+
+  function getDurationColorClass(duration) {
+    if (duration < 500) {
+      return 'duration-short';
+    } else if (duration >= 500 && duration <= 1000) {
+      return 'duration-medium';
+    } else {
+      return 'duration-long';
+    }
+  }
+
+  function renderTable(dataToRender) {
+    const tableBody = document.getElementById('testResultsTableBody');
+    tableBody.innerHTML = '';
+    let totalDuration = 0;
+
+    const grouped = {};
+    dataToRender.forEach(item => {
+      if (!grouped[item.testName]) {
+        grouped[item.testName] = {
+          testName: item.testName,
+          beforeEachDuration: 0,
+          testMethodDuration: 0,
+          status: 'UNKNOWN',
+          retryCount: 0,
+          tags: new Set(),
+          memoryBefore: 0,
+          memoryAfter: 0,
+          phaseDetails: []
+        };
+      }
+      if (item.phase === 'BeforeEach') {
+        grouped[item.testName].beforeEachDuration += item.durationMs;
+      } else if (item.phase === 'TestMethod') {
+        grouped[item.testName].testMethodDuration += item.durationMs;
+        grouped[item.testName].status = item.status;
+        grouped[item.testName].retryCount = item.retryCount;
+        grouped[item.testName].memoryBefore = item.memoryBefore;
+        grouped[item.testName].memoryAfter = item.memoryAfter;
+        if (item.tags) item.tags.forEach(tag => grouped[item.testName].tags.add(tag));
+      }
+      grouped[item.testName].phaseDetails.push(item);
+    });
+
+    const combinedTests = [];
+    for (const testName in grouped) {
+      const testData = grouped[testName];
+      const totalTestDuration = testData.beforeEachDuration + testData.testMethodDuration;
+      totalDuration += totalTestDuration;
+
+      combinedTests.push({
+        testName: testData.testName,
+        beforeEachDuration: testData.beforeEachDuration,
+        testMethodDuration: testData.testMethodDuration,
+        totalTestDuration: totalTestDuration,
+        status: testData.status,
+        retryCount: testData.retryCount,
+        tags: Array.from(testData.tags), // Convert Set back to Array for display
+        memoryBefore: testData.memoryBefore,
+        memoryAfter: testData.memoryAfter
+      });
+    }
+
+    combinedTests.sort((a, b) => b.totalTestDuration - a.totalTestDuration);
+
+    combinedTests.forEach(item => {
+      const row = tableBody.insertRow();
+      const colorClass = getDurationColorClass(item.testMethodDuration);
+      row.classList.add(colorClass);
+
+      row.insertCell().textContent = item.testName;
+      row.insertCell().textContent = `BeforeEach: ${item.beforeEachDuration}ms, TestMethod: ${item.testMethodDuration}ms`; // Combined phase duration
+      row.insertCell().textContent = item.totalTestDuration;
+      row.insertCell().textContent = item.status;
+      row.insertCell().textContent = item.retryCount;
+      row.insertCell().textContent = item.tags.join(', ');
+      row.insertCell().textContent = item.memoryBefore;
+      row.insertCell().textContent = item.memoryAfter;
+      row.insertCell().textContent = item.memoryAfter - item.memoryBefore;
+    });
+
+    document.getElementById('totalTime').textContent = `Всего времени на выполнение тестов: ${totalDuration} мс`;
+  }
+
+
+  let myChart;
+
+  function renderChart(data) {
+    const labels = [];
+    const beforeEachData = [];
+    const testMethodData = [];
+    const totalDurations = {};
+
+    const grouped = {};
+    data.forEach(item => {
+      if (!grouped[item.testName]) {
+        grouped[item.testName] = { beforeEach: 0, testMethod: 0 };
+      }
+      if (item.phase === 'BeforeEach') {
+        grouped[item.testName].beforeEach += item.durationMs;
+      } else if (item.phase === 'TestMethod') {
+        grouped[item.testName].testMethod += item.durationMs;
+      }
+    });
+
+    for (const testName in grouped) {
+      totalDurations[testName] = grouped[testName].beforeEach + grouped[testName].testMethod;
+    }
+
+
+    const sortedTestNames = Object.keys(totalDurations).sort((a, b) => totalDurations[b] - totalDurations[a]);
+
+    sortedTestNames.forEach(testName => {
+      labels.push(testName);
+      beforeEachData.push(grouped[testName].beforeEach);
+      testMethodData.push(grouped[testName].testMethod);
+    });
+
+    const ctx = document.getElementById('chart').getContext('2d');
+    if (myChart) {
+      myChart.destroy();
+    }
+    myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'BeforeEach, мс',
+            data: beforeEachData,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+          },
+          {
+            label: 'TestMethod, мс',
+            data: testMethodData,
+            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Время (миллисекунды)',
+              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+            },
+            ticks: {
+              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+            },
+            grid: {
+              color: document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Название теста',
+              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+            },
+            ticks: {
+              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+            },
+            grid: {
+              color: document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function updateChartColors() {
+    if (myChart) {
+      myChart.options.scales.y.title.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
+      myChart.options.scales.y.ticks.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
+      myChart.options.scales.y.grid.color = document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      myChart.options.scales.x.title.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
+      myChart.options.scales.x.ticks.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
+      myChart.options.scales.x.grid.color = document.body.classList.contains('dark-mode') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      myChart.options.plugins.legend.labels.color = document.body.classList.contains('dark-mode') ? '#f0f0f0' : '#333';
+      myChart.update();
+    }
+  }
+
+  fetch("")
+  .then(response => response.json())
+  .then(data => {
+    allTestData = data;
+    renderTable(allTestData);
+    renderChart(allTestData);
+  })
+  .catch(err => {
+    document.body.innerHTML = '<h2>Ошибка загрузки данных отчёта</h2><pre>' + err + '</pre>';
+  });
+
+  function sortTests(criteria) {
+    let sortedData = [...allTestData]; // Use a copy
+    if (criteria === 'duration') {
+      const groupedDurations = {};
+      allTestData.forEach(item => {
+        if (!groupedDurations[item.testName]) {
+          groupedDurations[item.testName] = 0;
+        }
+        groupedDurations[item.testName] += item.durationMs;
+      });
+
+      sortedData.sort((a, b) => {
+        const durationA = groupedDurations[a.testName] || 0;
+        const durationB = groupedDurations[b.testName] || 0;
+        return durationB - durationA; // Descending
+      });
+    } else if (criteria === 'name') {
+      sortedData.sort((a, b) => a.testName.localeCompare(b.testName));
+    }
+    renderTable(sortedData);
+    renderChart(sortedData);
+  }
+
+
+  document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const filteredData = allTestData.filter(item =>
+        item.testName.toLowerCase().includes(searchTerm)
+    );
+    renderTable(filteredData);
+    renderChart(filteredData);
+  });
+
+  function downloadJson() {
+    fetch("")
+    .then(response => response.json())
+    .then(data => {
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'test-analyzer-report.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert('Ошибка при скачивании JSON: ' + err);
+    });
+  }
+</script>
+</body>
+</html>
