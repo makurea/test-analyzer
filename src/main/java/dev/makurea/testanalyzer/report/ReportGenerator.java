@@ -17,7 +17,7 @@ public class ReportGenerator {
   private static final String OUTPUT_DIR = "build/test-analyzer-reports";
   private static final String JSON_FILENAME = "test-analyzer-results.json";
   private static final String HTML_FILENAME = "test-analyzer-report.html";
-  private static final String HTML_TEMPLATE_PATH = "report-template.html";
+  private static final String HTML_TEMPLATE_PATH = "ReportTemplate.html";
 
   public void generateReport(List<TestResult> results) {
     try {
