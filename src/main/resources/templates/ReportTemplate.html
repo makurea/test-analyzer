@@ -303,53 +303,12 @@
   let allTestData = []; // Stores the original fetched data
   let currentSortedData = []; // Stores the currently sorted/filtered data for table and chart rendering
 
-  // --- Theme Toggling Logic ---
-  const themeToggle = document.getElementById('themeToggle');
-  const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
-
-  // Set initial theme based on localStorage or system preference
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') {
-    document.body.classList.add('dark-mode');
-    themeToggle.textContent = '☀️'; // Sun icon for dark mode
-  } else if (savedTheme === 'light') {
-    document.body.classList.remove('dark-mode');
-    themeToggle.textContent = '💡'; // Lightbulb/moon for light mode
-  } else if (prefersDarkScheme.matches) {
-    document.body.classList.add('dark-mode');
-    themeToggle.textContent = '☀️';
-  } else {
-    themeToggle.textContent = '💡';
-  }
-
-  // Listen for theme toggle click
-  themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    if (document.body.classList.contains('dark-mode')) {
-      localStorage.setItem('theme', 'dark');
-      themeToggle.textContent = '☀️';
-    } else {
-      localStorage.setItem('theme', 'light');
-      themeToggle.textContent = '💡';
-    }
-    updateChartColors(); // Update chart colors on theme change
-  });
-
-  // Listen for system theme changes
-  prefersDarkScheme.addEventListener('change', (e) => {
-    if (!localStorage.getItem('theme')) { // Only react if no explicit theme is set
-      if (e.matches) {
-        document.body.classList.add('dark-mode');
-        themeToggle.textContent = '☀️';
-      } else {
-        document.body.classList.remove('dark-mode');
-        themeToggle.textContent = '💡';
-      }
-      updateChartColors();
-    }
-  });
-
   // --- Utility Functions ---
+  /**
+   * Returns a CSS class name based on the test duration.
+   * @param {number} duration - The duration of the test in milliseconds.
+   * @returns {string} The CSS class name.
+   */
   function getDurationColorClass(duration) {
     if (duration < 500) { // Fast tests
       return 'duration-short';
@@ -360,7 +319,12 @@
     }
   }
 
-  // --- Data Processing for Table and Chart ---
+  /**
+   * Groups and combines test data from different phases (BeforeEach, TestMethod)
+   * into a single comprehensive record for each unique test.
+   * @param {Array<Object>} data - The raw test results data.
+   * @returns {Array<Object>} An array of combined test records.
+   */
   function groupAndCombineTestData(data) {
     const grouped = {};
     data.forEach(item => {
@@ -375,8 +339,6 @@
           tags: new Set(),
           memoryBefore: 0,
           memoryAfter: 0,
-          // We can store original items if needed for deeper drill-down later
-          // originalPhases: []
         };
       }
 
@@ -392,7 +354,6 @@
         // Add tags to a Set to ensure uniqueness
         if (item.tags) item.tags.forEach(tag => grouped[item.testName].tags.add(tag));
       }
-      // grouped[item.testName].originalPhases.push(item);
     });
 
     // Convert grouped object back to an array for rendering
@@ -416,7 +377,10 @@
     return combinedTests;
   }
 
-  // --- Table Rendering ---
+  /**
+   * Renders the test data into the HTML table.
+   * @param {Array<Object>} dataToRender - The combined test data to display.
+   */
   function renderTable(dataToRender) {
     const tableBody = document.getElementById('testResultsTableBody');
     tableBody.innerHTML = ''; // Clear existing rows
@@ -452,9 +416,12 @@
     document.getElementById('totalTime').textContent = `Общее время выполнения всех тестов: ${totalOverallDuration.toFixed(2)} мс`;
   }
 
-  // --- Chart Rendering ---
   let myChart; // Chart.js instance
 
+  /**
+   * Renders or updates the Chart.js bar chart with test duration data.
+   * @param {Array<Object>} data - The combined test data for the chart.
+   */
   function renderChart(data) {
     const labels = [];
     const beforeEachData = [];
@@ -568,7 +535,9 @@
     });
   }
 
-  // Update chart colors dynamically after theme change
+  /**
+   * Updates chart colors based on the current theme (dark/light).
+   */
   function updateChartColors() {
     if (myChart) {
       const isDarkMode = document.body.classList.contains('dark-mode');
@@ -590,31 +559,11 @@
     }
   }
 
-  // --- Data Fetching ---
-  fetch("{{JSON_FILENAME}}") // Placeholder for actual JSON file name
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    allTestData = data;
-    const combinedData = groupAndCombinedTestData(allTestData);
-    renderTable(combinedData);
-    renderChart(combinedData);
-  })
-  .catch(err => {
-    console.error('Error loading test data:', err);
-    document.body.innerHTML = '<div class="container" style="text-align: center; color: var(--failed-color);">' +
-        '<h1>⚠️ Ошибка загрузки данных отчёта</h1>' +
-        '<p>Произошла ошибка при загрузке файла с данными отчёта. Убедитесь, что файл ' +
-        '<code>{{JSON_FILENAME}}</code> существует и доступен.</p>' +
-        '<pre style="text-align: left; background: var(--button-bg); padding: 15px; border-radius: 8px; overflow-x: auto;">' + err + '</pre>' +
-        '</div>';
-  });
-
-  // --- Sorting Functionality ---
+  /**
+   * Sorts the currently displayed test data based on a given criteria (duration or name)
+   * and re-renders the table and chart.
+   * @param {string} criteria - The sorting criteria ('duration' or 'name').
+   */
   function sortTests(criteria) {
     let dataToSort = [...currentSortedData]; // Use current filtered/sorted data
     if (criteria === 'duration') {
@@ -626,17 +575,9 @@
     renderChart(dataToSort); // Re-render chart with sorted data
   }
 
-  // --- Search Functionality ---
-  document.getElementById('searchInput').addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const filteredData = groupAndCombineTestData(allTestData).filter(item =>
-        item.testName.toLowerCase().includes(searchTerm)
-    );
-    renderTable(filteredData);
-    renderChart(filteredData);
-  });
-
-  // --- JSON Download Functionality ---
+  /**
+   * Initiates the download of the original JSON report file.
+   */
   function downloadJson() {
     fetch("{{JSON_FILENAME}}")
     .then(response => response.json())
@@ -657,6 +598,87 @@
       console.error('Error downloading JSON:', err);
     });
   }
+
+  // --- Theme Toggling Initialization ---
+  const themeToggle = document.getElementById('themeToggle');
+  const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+  // Set initial theme based on localStorage or system preference
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+    themeToggle.textContent = '☀️'; // Sun icon for dark mode
+  } else if (savedTheme === 'light') {
+    document.body.classList.remove('dark-mode');
+    themeToggle.textContent = '💡'; // Lightbulb/moon for light mode
+  } else if (prefersDarkScheme.matches) {
+    document.body.classList.add('dark-mode');
+    themeToggle.textContent = '☀️';
+  } else {
+    themeToggle.textContent = '💡';
+  }
+
+  // Listen for theme toggle click
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    if (document.body.classList.contains('dark-mode')) {
+      localStorage.setItem('theme', 'dark');
+      themeToggle.textContent = '☀️';
+    } else {
+      localStorage.setItem('theme', 'light');
+      themeToggle.textContent = '💡';
+    }
+    updateChartColors(); // Update chart colors on theme change
+  });
+
+  // Listen for system theme changes
+  prefersDarkScheme.addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) { // Only react if no explicit theme is set
+      if (e.matches) {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️';
+      } else {
+        document.body.classList.remove('dark-mode');
+        themeToggle.textContent = '💡';
+      }
+      updateChartColors();
+    }
+  });
+
+
+  // --- Data Fetching (This block remains at the end, but now all called functions are defined) ---
+  fetch("{{JSON_FILENAME}}") // Placeholder for actual JSON file name
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    allTestData = data;
+    const combinedData = groupAndCombineTestData(allTestData);
+    renderTable(combinedData);
+    renderChart(combinedData);
+  })
+  .catch(err => {
+    console.error('Error loading test data:', err);
+    document.body.innerHTML = '<div class="container" style="text-align: center; color: var(--failed-color);">' +
+        '<h1>⚠️ Ошибка загрузки данных отчёта</h1>' +
+        '<p>Произошла ошибка при загрузке файла с данными отчёта. Убедитесь, что файл ' +
+        '<code>{{JSON_FILENAME}}</code> существует и доступен.</p>' +
+        '<pre style="text-align: left; background: var(--button-bg); padding: 15px; border-radius: 8px; overflow-x: auto;">' + err + '</pre>' +
+        '</div>';
+  });
+
+  // --- Search Functionality Initialization ---
+  document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const filteredData = groupAndCombineTestData(allTestData).filter(item =>
+        item.testName.toLowerCase().includes(searchTerm)
+    );
+    renderTable(filteredData);
+    renderChart(filteredData);
+  });
 </script>
 </body>
 </html>
