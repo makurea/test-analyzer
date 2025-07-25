@@ -2,6 +2,15 @@ package dev.makurea.testanalyzer.core;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+/*
+ * Класс `RawTestExecutionData` предназначен для инкапсуляции и передачи
+ * исходных данных о начале выполнения тестового метода.
+ * Он используется расширением JUnit 5 для временного хранения контекста выполнения,
+ * времени начала теста и объема используемой памяти до его старта.
+ * Эти данные являются фундаментальными для последующего расчета
+ * общей длительности выполнения тестового метода и измерения изменения потребления памяти
+ * по завершении теста.
+ */
 
 public class RawTestExecutionData {
   private final ExtensionContext extensionContext;
