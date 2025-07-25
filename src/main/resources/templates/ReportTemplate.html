@@ -275,9 +275,9 @@
     <thead>
     <tr>
       <th>Имя теста</th>
-      <th>Общая длительность (мс)</th>
+      <th>Длительность TestMethod (мс)</th>
+      <th>Длительность BeforeEach (мс)</th>
       <th>Статус</th>
-      <th>Повторы</th>
       <th>Теги</th>
       <th>Память До (байт)</th>
       <th>Память После (байт)</th>
@@ -404,9 +404,9 @@
       }
 
       row.insertCell().textContent = item.testName;
-      row.insertCell().textContent = `${item.totalTestDuration} мс (BeforeEach: ${item.beforeEachDuration} мс, TestMethod: ${item.testMethodDuration} мс)`;
+      row.insertCell().textContent = `${item.testMethodDuration} мс`; // Для TestMethod
+      row.insertCell().textContent = `${item.beforeEachDuration} мс`; // Для BeforeEach
       row.insertCell().innerHTML = `${item.status === 'PASSED' ? '✅' : '❌'} ${item.status}`;
-      row.insertCell().textContent = item.retryCount;
       row.insertCell().textContent = item.tags.length > 0 ? item.tags.join(', ') : 'N/A';
       row.insertCell().textContent = item.memoryBefore;
       row.insertCell().textContent = item.memoryAfter;
